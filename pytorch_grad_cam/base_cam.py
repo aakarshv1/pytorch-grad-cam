@@ -64,8 +64,11 @@ class BaseCAM:
         eigen_smooth: bool = False,
     ) -> np.ndarray:
         weights = self.get_cam_weights(input_tensor, target_layer, targets, activations, grads)
+        # 1D conv
+        if len(activations.shape) == 3:
+            weighted_activations = weights[:, :, None] * activations
         # 2D conv
-        if len(activations.shape) == 4:
+        elif len(activations.shape) == 4:
             weighted_activations = weights[:, :, None, None] * activations
         # 3D conv
         elif len(activations.shape) == 5:
@@ -111,14 +114,16 @@ class BaseCAM:
         return self.aggregate_multi_layers(cam_per_layer)
 
     def get_target_width_height(self, input_tensor: torch.Tensor) -> Tuple[int, int]:
-        if len(input_tensor.shape) == 4:
+        if len(input_tensor.shape) == 3:
+            width, height = 1, input_tensor.size(-1) 
+        elif len(input_tensor.shape) == 4:
             width, height = input_tensor.size(-1), input_tensor.size(-2)
             return width, height
         elif len(input_tensor.shape) == 5:
             depth, width, height = input_tensor.size(-1), input_tensor.size(-2), input_tensor.size(-3)
             return depth, width, height
         else:
-            raise ValueError("Invalid input_tensor shape. Only 2D or 3D images are supported.")
+            raise ValueError(f"Invalid input_tensor shape. Only 2D or 3D images are supported. Provided shape: {input_tensor.shape}")
 
     def compute_cam_per_layer(
         self, input_tensor: torch.Tensor, targets: List[torch.nn.Module], eigen_smooth: bool

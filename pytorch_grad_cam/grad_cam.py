@@ -19,8 +19,11 @@ class GradCAM(BaseCAM):
                         target_category,
                         activations,
                         grads):
+        # 1D image
+        if len(grads.shape) == 3:
+            return np.mean(grads, axis=(2))                
         # 2D image
-        if len(grads.shape) == 4:
+        elif len(grads.shape) == 4:
             return np.mean(grads, axis=(2, 3))
         
         # 3D image
